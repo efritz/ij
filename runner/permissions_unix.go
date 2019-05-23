@@ -2,6 +2,13 @@
 
 package runner
 
+import (
+	"fmt"
+	"os/user"
+
+	"github.com/efritz/ij/command"
+)
+
 const FlashPermissionsImage = "alpine:3.8"
 
 func (r *Runner) tryFlashPermissions() {
@@ -10,7 +17,6 @@ func (r *Runner) tryFlashPermissions() {
 		"Flashing workspace permissions",
 	)
 
-	// TODO - windows hack
 	if err := r.flashPermissions(); err != nil {
 		r.logger.Error(
 			nil,

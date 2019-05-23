@@ -48,16 +48,16 @@ func SetupRunner(
 	}
 
 	defer func() {
-		if err == nil {
-			return
-		}
+		// if err == nil {
+		// 	return
+		// }
 
-		if err := scratch.Teardown(); err != nil {
-			logging.EmergencyLog(
-				"error: failed to teardown scratch directory: %s",
-				err.Error(),
-			)
-		}
+		// if err := scratch.Teardown(); err != nil {
+		// 	logging.EmergencyLog(
+		// 		"error: failed to teardown scratch directory: %s",
+		// 		err.Error(),
+		// 	)
+		// }
 	}()
 
 	logger, loggerFactory, err = setupLogger(
@@ -93,6 +93,27 @@ func SetupRunner(
 		cleanup,
 		logger,
 	)
+
+	// TODO - explicitly enable
+	if true {
+		logger.Info(
+			nil,
+			"Starting ssh-agent container",
+		)
+
+		err = startSSHAgent(runID, scratch, containerLists, logger)
+		if err != nil {
+			ReportError(
+				ctx,
+				logger,
+				nil,
+				"error: failed to create network: %s",
+				err.Error(),
+			)
+
+			return
+		}
+	}
 
 	err = setupRegistries(
 		ctx,
