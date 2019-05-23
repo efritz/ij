@@ -4,24 +4,21 @@ package runner
 
 const FlashPermissionsImage = "alpine:3.8"
 
-func (r *Runner) tryFlashPermissions(){
-r.logger.Info(
-	nil,
-	"Flashing workspace permissions",
-)
-
-
-// TODO - windows hack
-if err := r.flashPermissions(); err != nil {
-	r.logger.Error(
+func (r *Runner) tryFlashPermissions() {
+	r.logger.Info(
 		nil,
-		"Failed to flash workspace permissions: %s",
-		err.Error(),
+		"Flashing workspace permissions",
 	)
-}
-}
 
-
+	// TODO - windows hack
+	if err := r.flashPermissions(); err != nil {
+		r.logger.Error(
+			nil,
+			"Failed to flash workspace permissions: %s",
+			err.Error(),
+		)
+	}
+}
 
 func (r *Runner) flashPermissions() error {
 	user, err := user.Current()
