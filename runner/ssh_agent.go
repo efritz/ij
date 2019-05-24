@@ -18,12 +18,35 @@ const (
 
 func startSSHAgent(
 	runID string,
+	identities []string,
 	scratch *scratch.ScratchSpace,
 	containerLists *ContainerLists,
 	logger logging.Logger,
 ) error {
 	containerName := fmt.Sprintf("%s-ssh-agent", runID)
 
+	if err := startContainer(runID, containerName, scratch, containerLists, logger); err != nil {
+		return err
+	}
+
+	if err := addKeys(containerName, logger); err != nil {
+		return err
+	}
+
+	if err := ensureKeys(containerName, identities, logger); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func startContainer(
+	runID string,
+	containerName string,
+	scratch *scratch.ScratchSpace,
+	containerLists *ContainerLists,
+	logger logging.Logger,
+) error {
 	builder, err := sshAgentCommandBuilderFactory(
 		runID,
 		scratch,
@@ -51,7 +74,11 @@ func startSSHAgent(
 		return fmt.Errorf("failed to start ssh-agent container: %s, %s", err.Error(), errOutput)
 	}
 
-	_, errOutput, err = command.NewRunner(logger).RunForOutput(
+	return nil
+}
+
+func addKeys(containerName string, logger logging.Logger) error {
+	_, errOutput, err := command.NewRunner(logger).RunForOutput(
 		context.Background(),
 		[]string{
 			"docker",
@@ -67,7 +94,31 @@ func startSSHAgent(
 		return fmt.Errorf("failed to add ssh-keys: %s, %s", err.Error(), errOutput)
 	}
 
-	// TODO - need to run the ensure keys again but inside the container
+	return nil
+}
+
+func ensureKeys(containerName string, identities []string, logger logging.Logger) error {
+	identityArgs := []string{}
+	for _, identity := range identities {
+		identityArgs = append(identityArgs, "--ssh-identity")
+		identityArgs = append(identityArgs, identity)
+	}
+
+	_, errOutput, err := command.NewRunner(logger).RunForOutput(
+		context.Background(),
+		append([]string{
+			"docker",
+			"exec",
+			containerName,
+			"/ij/ij-ensure-keys-available",
+		}, identityArgs...),
+		nil,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to validate ssh keys: %s, %s", err.Error(), errOutput)
+	}
+
 	return nil
 }
 

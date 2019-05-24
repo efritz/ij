@@ -588,7 +588,7 @@ func (s *runTaskCommandBuilderState) addSSHOptions(cb *command.Builder) error {
 		// Outside of the ssh-agent container we can just mount the host auth socket.
 		authSock := os.Getenv("SSH_AUTH_SOCK")
 		cb.AddFlagValue("-e", "SSH_AUTH_SOCK")
-		cb.AddFlagValue("-v", fmt.Sprintf("%s:%s",authSock,authSock))
+		cb.AddFlagValue("-v", fmt.Sprintf("%s:%s", authSock, authSock))
 	}
 
 	if s.containerOptions.EnableContainerSSHAgent {

@@ -8,5 +8,5 @@ RUN apk -v --update add python py-pip && \
     mkdir ~/.aws
 
 WORKDIR /ij
-COPY get-ecr-token.sh /ij
 CMD ["/ij/get-ecr-token.sh"]
+COPY get-ecr-token.sh /ij

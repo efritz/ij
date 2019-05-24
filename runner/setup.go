@@ -22,16 +22,6 @@ func SetupRunner(
 	appOptions *options.AppOptions,
 	runOptions *options.RunOptions,
 ) (runner *Runner, err error) {
-	var enableHostSSHAgent bool
-	enableHostSSHAgent, err = shouldEnableHostSSHAgent(
-		runOptions.EnableContainerSSHAgent,
-		cfg.Options.SSHIdentities,
-	)
-
-	if err != nil {
-		return
-	}
-
 	var (
 		cleanup           = NewCleanup()
 		ctx, cancel       = setupContext(runOptions.Context, runOptions.PlanTimeout)
@@ -43,6 +33,15 @@ func SetupRunner(
 	)
 
 	if runID, err = setupRunID(); err != nil {
+		return
+	}
+
+	enableHostSSHAgent, err := shouldEnableHostSSHAgent(
+		runOptions.EnableContainerSSHAgent,
+		cfg.Options.SSHIdentities,
+	)
+
+	if err != nil {
 		return
 	}
 
@@ -111,13 +110,20 @@ func SetupRunner(
 			"Starting ssh-agent container",
 		)
 
-		err = startSSHAgent(runID, scratch, containerLists, logger)
+		err = startSSHAgent(
+			runID,
+			cfg.Options.SSHIdentities,
+			scratch,
+			containerLists,
+			logger,
+		)
+
 		if err != nil {
 			reportError(
 				ctx,
 				logger,
 				nil,
-				"error: failed to create network: %s",
+				"error: failed to setup ssh-agent: %s",
 				err.Error(),
 			)
 
