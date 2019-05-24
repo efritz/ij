@@ -44,6 +44,7 @@ func newRunOptions(cmd *kingpin.CmdClause) *options.RunOptions {
 	cmd.Flag("memory", "The amount of memory to give each container.").Short('m').StringVar(&opts.Memory)
 	cmd.Flag("timeout", "Maximum amount of time a plan can run. 0 to disable.").Default("15m").DurationVar(&opts.PlanTimeout)
 	cmd.Flag("ssh-identity", "Enable ssh-agent for the given identities.").StringsVar(&opts.SSHIdentities)
+	cmd.Flag("ssh-agent-container", "Start an ssh-agent inside of a container.").BoolVar(&opts.EnableContainerSSHAgent)
 	return opts
 }
 

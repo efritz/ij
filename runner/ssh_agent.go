@@ -3,16 +3,17 @@ package runner
 import (
 	"context"
 	"fmt"
+	"os/user"
 
 	"github.com/efritz/ij/command"
 	"github.com/efritz/ij/logging"
 	"github.com/efritz/ij/scratch"
-	"github.com/efritz/ij/util"
 )
 
 const (
-	SSHAgentImage = "alpine:3.8"
-	SocketPath    = "/usr/local/lib/ij-ssh-agent/sockets" // TODO - consider something different here
+	SSHAgentImage    = "efritz/ij-ssh-agent:latest"
+	SocketVolumePath = "/tmp/ij/ssh-agent"
+	SocketPath       = "/tmp/ij/ssh-agent/ssh-agent.sock"
 )
 
 func startSSHAgent(
@@ -21,10 +22,7 @@ func startSSHAgent(
 	containerLists *ContainerLists,
 	logger logging.Logger,
 ) error {
-	containerName, err := util.MakeID()
-	if err != nil {
-		return fmt.Errorf("failed to generate container id: %s", err.Error())
-	}
+	containerName := fmt.Sprintf("%s-ssh-agent", runID)
 
 	builder, err := sshAgentCommandBuilderFactory(
 		runID,
@@ -33,27 +31,43 @@ func startSSHAgent(
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to build command args: %s")
+		return fmt.Errorf("failed to build command args: %s", err.Error())
 	}
 
 	args, _, err := builder.Build()
 	if err != nil {
-		return fmt.Errorf("failed to build command args: %s")
+		return fmt.Errorf("failed to build command args: %s", err.Error())
 	}
 
 	containerLists.ContainerStopper.Add(containerName)
 
-	_, _, err = command.NewRunner(logger).RunForOutput(
+	_, errOutput, err := command.NewRunner(logger).RunForOutput(
 		context.Background(),
 		args,
 		nil,
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to start ssh-agent container: %s", err.Error())
+		return fmt.Errorf("failed to start ssh-agent container: %s, %s", err.Error(), errOutput)
 	}
 
-	// TODO - exec or something to change perms?
+	_, errOutput, err = command.NewRunner(logger).RunForOutput(
+		context.Background(),
+		[]string{
+			"docker",
+			"exec",
+			containerName,
+			// TODO - perms may be an issue on windows
+			"ssh-add",
+		},
+		nil,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to add ssh-keys: %s, %s", err.Error(), errOutput)
+	}
+
+	// TODO - need to run the ensure keys again but inside the container
 	return nil
 }
 
@@ -62,34 +76,19 @@ func sshAgentCommandBuilderFactory(
 	scratch *scratch.ScratchSpace,
 	containerName string,
 ) (*command.Builder, error) {
+	current, err := user.Current()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user (%s)", err.Error())
+	}
+
 	builder := command.NewBuilder([]string{
 		"docker",
 		"run",
 		"--rm",
 	}, nil)
 
-	// TODO - take out some of this jazz
-	path, err := scratch.WriteScript(fmt.Sprintf(`
-		set -ex
-		apk add openssh-client
-		ssh-agent -D -a %s/socket
-	`, SocketPath))
-
-	if err != nil {
-		return nil, err
-	}
-
-	mount := fmt.Sprintf(
-		"%s:%s",
-		path,
-		ScriptPath,
-	)
-
 	builder.AddArgs(SSHAgentImage)
-	builder.AddArgs(ScriptPath)
-	builder.AddFlagValue("-v", mount)
-	builder.AddFlagValue("-v", SocketPath)
-	builder.AddFlagValue("--entrypoint", "/bin/sh")
+	builder.AddFlagValue("-v", fmt.Sprintf("%s/.ssh:/root/.ssh", current.HomeDir))
 	builder.AddFlagValue("--name", containerName)
 	builder.AddFlag("-d")
 	builder.AddFlagValue("--network", runID)
