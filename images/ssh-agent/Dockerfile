@@ -17,5 +17,6 @@ ENV SSH_AUTH_SOCK="${SSH_AUTH_VOLUME}/ssh-agent.sock"
 WORKDIR /ij
 CMD ["/ij/start-agent.sh"]
 VOLUME ["${SSH_AUTH_VOLUME}"]
+COPY add-keys.sh /ij
 COPY start-agent.sh /ij
 COPY --from=builder /ij/ij-ensure-keys-available .
