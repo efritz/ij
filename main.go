@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin"
-
 	"github.com/efritz/ij/config"
+	"github.com/efritz/ij/consts"
 	"github.com/efritz/ij/loader"
 	"github.com/efritz/ij/logging"
 	"github.com/efritz/ij/options"
