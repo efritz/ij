@@ -30,10 +30,22 @@ func startSSHAgent(
 	}
 
 	if err := addKeys(containerName, logger); err != nil {
+		command.NewRunner(logger).RunForOutput(
+			context.Background(),
+			[]string{"docker", "kill", containerName},
+			nil,
+		)
+
 		return err
 	}
 
 	if err := ensureKeys(containerName, identities, logger); err != nil {
+		command.NewRunner(logger).RunForOutput(
+			context.Background(),
+			[]string{"docker", "kill", containerName},
+			nil,
+		)
+
 		return err
 	}
 
@@ -84,8 +96,7 @@ func addKeys(containerName string, logger logging.Logger) error {
 			"docker",
 			"exec",
 			containerName,
-			// TODO - perms may be an issue on windows
-			"ssh-add",
+			"/ij/add-keys.sh",
 		},
 		nil,
 	)
