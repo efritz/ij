@@ -14,8 +14,6 @@ import (
 	"github.com/efritz/ij/subcommand"
 )
 
-const Version = "0.1.0"
-
 func newSharedOptions(app *kingpin.Application, projectDir string) *options.AppOptions {
 	opts := &options.AppOptions{
 		ProjectDir:  projectDir,
@@ -66,7 +64,7 @@ func main() {
 }
 
 func runMain() error {
-	app := kingpin.New("ij", "IJ is a build tool using Docker containers.").Version(Version)
+	app := kingpin.New("ij", "IJ is a build tool using Docker containers.").Version(consts.Version)
 	clean := app.Command("clean", "Remove exported files.")
 	_ = app.Command("login", "Login to docker registries.")
 	_ = app.Command("logout", "Logout of docker registries.")
